@@ -21,3 +21,5 @@ Built to learn Flask + OpenCV, with a sprinkle of GPS logging and face recogniti
 ---
 
 > _**"this readme is made by ai btw.."**_ 
+
+---
