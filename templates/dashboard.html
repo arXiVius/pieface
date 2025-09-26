@@ -1,0 +1,237 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+{% endblock %}
+
+
+{% block content %}
+<div class="dashboard-container">
+    <header class="dashboard-header">
+        <h2>Welcome, {{ name }}!</h2>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </header>
+
+    <main class="main-grid">
+        <div class="card">
+            <h3>Live Presence Verification
+                <button id="expandLiveFeedBtn" class="btn-icon" title="Expand Live Feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3m-18 0v3a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+            </h3>
+            <div class="camera-feed">
+                <img id="video" src="{{ url_for('video_feed') }}" width="100%">
+            </div>
+            
+            <div id="flash-container"></div>
+            
+            <button id="captureBtn" class="btn">
+                <div class="spinner"></div>
+                <span class="btn-text">Verify Presence</span>
+            </button>
+        </div>
+
+        <div class="card">
+            <h3>Presence History</h3>
+            <div class="table-container">
+                <table id="presence-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Status</th>
+                            <th>Location (Lat, Long)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if records %}
+                            {% for record in records %}
+                            <tr>
+                                <td>{{ record.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>{{ record.status }}</td>
+                                <td>{{ record.latitude|round(4) if record.latitude else 'N/A' }}, {{ record.longitude|round(4) if record.longitude else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr id="no-records-row">
+                                <td colspan="3" style="text-align: center; color: var(--subtle-text-color);">No records yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-controls">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('dashboard', page=pagination.prev_num) }}" class="btn-pagination">Previous</a>
+                {% endif %}
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == pagination.page %}
+                            <span class="btn-pagination current">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('dashboard', page=page_num) }}" class="btn-pagination">{{ page_num }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span class="ellipsis">...</span>
+                    {% endif %}
+                {% endfor %}
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('dashboard', page=pagination.next_num) }}" class="btn-pagination">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const flashContainer = document.getElementById('flash-container');
+    const presenceTableBody = document.querySelector('#presence-table tbody');
+
+    let currentLatitude = null;
+    let currentLongitude = null;
+
+    // Get GPS location when the page loads
+    window.onload = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    currentLatitude = position.coords.latitude;
+                    currentLongitude = position.coords.longitude;
+                    console.log('Location acquired:', currentLatitude, currentLongitude);
+                },
+                () => {
+                    showFlashMessage('Could not get location. Please enable location services.', 'error');
+                }
+            );
+        } else {
+            showFlashMessage('Geolocation is not supported by this browser.', 'error');
+        }
+    };
+    
+    // Function to display dynamic flash messages
+    const showFlashMessage = (message, type = 'success') => {
+        flashContainer.innerHTML = `<div class="flash ${type}">${message}</div>`;
+        flashContainer.querySelector('.flash').style.display = 'block';
+    };
+
+    // Handle the capture button click
+    captureBtn.addEventListener('click', () => {
+        if (!currentLatitude || !currentLongitude) {
+            showFlashMessage('Waiting for location... Please enable GPS and try again.', 'error');
+            return;
+        }
+
+        // --- Provide User Feedback ---
+        captureBtn.disabled = true;
+        captureBtn.classList.add('loading');
+        captureBtn.querySelector('.btn-text').textContent = 'Processing...';
+        flashContainer.innerHTML = ''; // Clear previous messages
+
+        // --- CAPTURE FRAME FIX: Use intrinsic video resolution ---
+        
+        // Use videoWidth/videoHeight for the actual resolution of the stream
+        const videoWidth = video.naturalWidth || video.videoWidth; 
+        const videoHeight = video.naturalHeight || video.videoHeight;
+        
+        if (videoWidth === 0 || videoHeight === 0) {
+            showFlashMessage('Video stream is not active or hasn\'t loaded a frame. Try again.', 'error');
+            captureBtn.disabled = false;
+            captureBtn.classList.remove('loading');
+            captureBtn.querySelector('.btn-text').textContent = 'Verify Now'; // Use your shorter text
+            return;
+        }
+
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+        const context = canvas.getContext('2d');
+        
+        // Draw the image at its original resolution (1:1 mapping)
+        // This avoids upscaling/blurring, ensuring face detection works.
+        context.drawImage(video, 0, 0, videoWidth, videoHeight); 
+        
+        // --- End CAPTURE FRAME FIX ---
+
+        canvas.toBlob((blob) => {
+            const formData = new FormData();
+            formData.append('latitude', currentLatitude);
+            formData.append('longitude', currentLongitude);
+            formData.append('presence_capture', blob, 'capture.jpg');
+
+            fetch("{{ url_for('mark_presence') }}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showFlashMessage(data.message, 'success');
+                    addNewPresenceRecord(data.record);
+                } else {
+                    showFlashMessage(data.message || 'An unknown error occurred.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showFlashMessage('An error occurred while connecting to the server.', 'error');
+            })
+            .finally(() => {
+                // --- Reset Button State ---
+                captureBtn.disabled = false;
+                captureBtn.classList.remove('loading');
+                // Ensure this matches your final button text
+                captureBtn.querySelector('.btn-text').textContent = 'Verify Now'; 
+            });
+
+        }, 'image/jpeg', 0.85); // Added 0.85 quality for a balance of speed and detection reliability
+    });
+
+    // Function to dynamically add a new row to the history table
+    const addNewPresenceRecord = (record) => {
+        // Remove the "No records yet" row if it exists
+        const noRecordsRow = document.getElementById('no-records-row');
+        if (noRecordsRow) {
+            noRecordsRow.remove();
+        }
+
+        const newRow = presenceTableBody.insertRow(0); // Insert at the top
+        newRow.innerHTML = `
+            <td>${record.timestamp}</td>
+            <td>${record.status}</td>
+            <td>${record.lat}, ${record.long}</td>
+        `;
+    };
+
+    // Live Feed Expansion Logic (No change needed here)
+    const expandLiveFeedBtn = document.getElementById('expandLiveFeedBtn');
+    const liveFeedCard = document.querySelector('.main-grid .card:first-child');
+    const presenceHistoryCard = document.querySelector('.main-grid .card:last-child');
+    const mainGrid = document.querySelector('.main-grid');
+
+    expandLiveFeedBtn.addEventListener('click', () => {
+        liveFeedCard.classList.toggle('expanded');
+        presenceHistoryCard.classList.toggle('hidden');
+        mainGrid.classList.toggle('expanded-grid');
+
+        // Change icon based on state
+        const icon = expandLiveFeedBtn.querySelector('svg');
+        if (liveFeedCard.classList.contains('expanded')) {
+            icon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3m-18 0h3a2 2 0 0 1 2 2v3"/>'; // Minimize icon
+            expandLiveFeedBtn.title = 'Minimize Live Feed';
+        } else {
+            icon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3m-18 0v3a2 2 0 0 0 2 2h3"/>'; // Maximize icon
+            expandLiveFeedBtn.title = 'Expand Live Feed';
+        }
+    });
+</script>
+{% endblock %}

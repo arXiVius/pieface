@@ -1,0 +1,499 @@
+:root {
+    --bg-color: #000000;
+    --card-color: #111111;
+    --border-color: #333333;
+    --text-color: #eaeaea;
+    --subtle-text-color: #888888;
+    --accent-color: #ffffff;
+    --error-color: #ff0000;
+    --success-color: #0070f3;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* ==================================== */
+/* --- Vercel-like Text Selection Highlight --- */
+/* ==================================== */
+
+/* Standard CSS property */
+::selection {
+    background: var(--accent-color, #ffffff); /* The selection box color: White */
+    color: var(--bg-color, #000000);         /* The selected text color: Black */
+}
+
+/* Firefox specific property */
+::-moz-selection {
+    background: var(--accent-color, #ffffff); /* The selection box color: White */
+    color: var(--bg-color, #000000);         /* The selected text color: Black */
+}
+
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 1.5rem;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.dashboard-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.dashboard-header a {
+    color: var(--subtle-text-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.dashboard-header a:hover {
+    color: var(--text-color);
+}
+
+/* Base Grid for the Main Content */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 2rem;
+    /* Added transition for smooth expansion/minimization */
+    transition: grid-template-columns 0.4s ease; 
+}
+
+.card {
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    /* Added min-height for flexible cards */
+    min-height: fit-content; 
+}
+
+/* Modified h3 to accommodate the expand button */
+.card h3 {
+    display: flex; /* Enable flexbox for title and button */
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Style for the Expand/Minimize icon button */
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1; /* Fix vertical alignment */
+}
+
+.btn-icon:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.camera-feed img {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background-color: #000;
+}
+
+/* --- Live Feed Expansion Styles (New) --- */
+
+/* 1. Grid change when live feed is expanded */
+.main-grid.expanded-grid {
+    grid-template-columns: 1fr; /* Single column layout */
+}
+
+/* 2. Live Feed Card (Expanded state) */
+.card:first-child.expanded {
+    grid-column: 1 / -1; /* Make it span the full width */
+    min-height: 80vh; /* Make it significantly taller */
+    display: flex; /* Use flex to manage inner content */
+    flex-direction: column;
+}
+
+/* 3. History Card (Hidden state) */
+.card.hidden {
+    display: none;
+    opacity: 0;
+}
+
+/* Adjust camera feed within the expanded card */
+.card.expanded .camera-feed {
+    flex-grow: 1; /* Make feed take up available space */
+    max-height: calc(80vh - 12rem); /* Dynamic max height based on card height */
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Adjust image within the expanded card to fill space */
+.card.expanded .camera-feed img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    object-fit: contain; /* Contain the feed within the max-height */
+}
+
+/* --- Button and Spinner (Existing) --- */
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    background-color: var(--accent-color);
+    color: #000;
+    border: 1px solid var(--accent-color);
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn .spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+.btn.loading .spinner {
+    display: block;
+}
+
+.btn.loading .btn-text {
+    display: inline;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Flash Messages (Existing) --- */
+
+.flash {
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    display: none;
+}
+
+.flash.success {
+    background-color: rgba(0, 112, 243, 0.1);
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.flash.error {
+    background-color: rgba(255, 0, 0, 0.1);
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+/* --- Table Styling (Existing) --- */
+
+.table-container {
+    overflow-x: auto;
+    /* Added max-height for table container in normal view */
+    max-height: 400px; 
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+thead th {
+    color: var(--subtle-text-color);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* --- Pagination Controls Styling (New) --- */
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-pagination {
+    background-color: var(--card-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-pagination:hover {
+    background-color: var(--border-color);
+    border-color: var(--text-color);
+}
+
+.btn-pagination.current {
+    background-color: var(--accent-color);
+    color: var(--bg-color); /* Black text on white accent */
+    border-color: var(--accent-color);
+    pointer-events: none;
+}
+
+.ellipsis {
+    padding: 0 0.25rem;
+    color: var(--subtle-text-color);
+    font-size: 0.9rem;
+}
+
+/* --- Responsive layout (Existing) --- */
+@media (max-width: 900px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Ensure expansion still works on mobile by overriding mobile grid */
+    .main-grid.expanded-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================================== */
+/* --- Auth Form Styling (login.html, register.html) --- */
+/* ==================================== */
+
+/* Container for Login/Register pages */
+.content-card {
+    max-width: 400px;
+    margin: 80px auto; /* Center vertically and horizontally */
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
+}
+
+.card-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+/* Flash message style (reusing the general flash style) */
+.flash {
+    /* Flash messages from get_flashed_messages() are styled here */
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+    border: 1px solid var(--success-color); /* Default to success look */
+    background-color: rgba(0, 112, 243, 0.1); 
+    color: var(--success-color);
+    /* If you have specific error/success styling, ensure it applies here */
+}
+
+/* Form Group Layout */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Input Fields (Text, Password, File) */
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-color); /* Use a darker background for input */
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    transition: border-color 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus {
+    border-color: var(--success-color); /* Highlight on focus */
+    outline: none;
+}
+
+/* File Input specific styling for 'face_image' */
+.form-group input[type="file"] {
+    width: 100%;
+    /* Use padding to align with other inputs */
+    padding: 0.75rem 0; 
+    border: none;
+    color: var(--text-color);
+}
+
+/* Card Footer for links */
+.card-footer {
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.card-footer p {
+    margin: 0;
+    color: var(--subtle-text-color);
+}
+
+.card-footer a {
+    color: var(--success-color); /* Use an accent color for links */
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.card-footer a:hover {
+    color: var(--text-color);
+}
+
+/* Adjust the general .btn to fit the form context */
+.content-card .btn {
+    margin-top: 0.5rem; /* Reduce margin to integrate better with form */
+    /* Inherits the rest of the styling from the dashboard .btn */
+}
+
+/* --- Custom File Input Styling --- */
+
+/* 1. Hide the ugly default file input */
+.hidden-file-input {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+/* 2. Style the label that serves as the button */
+.custom-file-upload {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--border-color); /* A darker gray for the button */
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    text-align: left; /* Keep the file name aligned left */
+}
+
+/* Hover state */
+.custom-file-upload:hover {
+    background-color: #444444; /* Slightly lighter gray on hover */
+    border-color: var(--text-color);
+}
+
+/* Focus state (when input is focused via keyboard/click) */
+.hidden-file-input:focus + .custom-file-upload {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.5);
+}
+
+/* Style the file name text inside the button */
+#file-name {
+    display: inline-block;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

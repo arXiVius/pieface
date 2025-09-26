@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <h2>Create an Account</h2>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash">{{ messages[0] }}</div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label>Enrollment Face Image</label>
+    
+            <input type="file" id="face_image" name="face_image" accept="image/*" required class="hidden-file-input">
+    
+            <label for="face_image" class="custom-file-upload">
+                <span id="file-name">Choose File...</span>
+            </label>
+        </div>
+        <button type="submit" class="btn">Create Account</button>
+    </form>
+    <div class="card-footer">
+        <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+    </div>
+</div>
+
+<script>
+    // This script updates the span text when a file is selected
+    document.getElementById('face_image').addEventListener('change', function() {
+        const fileName = this.files.length > 0 ? this.files[0].name : 'Choose File...';
+        document.getElementById('file-name').textContent = fileName;
+    });
+</script>
+{% endblock %}
