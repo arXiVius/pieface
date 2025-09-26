@@ -18,4 +18,6 @@ Built to learn Flask + OpenCV, with a sprinkle of GPS logging and face recogniti
 - 💾 **SQLite Powered** → Tiny database = big brain.  
 - 🔒 **Security-ish** → Passwords hashed (no plain text, promise).
 
+---
+
 > _**"this readme is made by ai btw.."**_ 
