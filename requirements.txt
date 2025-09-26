@@ -2,7 +2,7 @@ bcrypt==5.0.0
 blinker==1.9.0
 click
 colorama
-dlib==19.22.9  # Use the standard PyPI version or specify the one you know works
+dlib==19.24.2  # Use the standard PyPI version or specify the one you know works
 face-recognition
 face-recognition-models
 Flask==3.1.2
