@@ -1,10 +1,10 @@
 bcrypt==5.0.0
 blinker==1.9.0
-click @ file:///D:/bld/click_1758270401364/work
-colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1733218098505/work
-dlib @ file:///D:/bld/dlib_1697537197896/work
-face-recognition @ file:///home/conda/feedstock_root/build_artifacts/face_recognition_1619808233029/work
-face-recognition-models @ file:///home/conda/feedstock_root/build_artifacts/face_recognition_models_1595707436534/work
+click
+colorama
+dlib==19.24.2  # Use the standard PyPI version or specify the one you know works
+face-recognition
+face-recognition-models
 Flask==3.1.2
 Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
@@ -14,8 +14,9 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
 numpy==1.23.5
-opencv-contrib-python-headless==4.8.0.76
-pillow @ file:///D:/bld/bld/rattler-build_pillow_1758208682/work
+# NOTE: Use the standard PyPI package name and version
+opencv-python-headless==4.8.0.76
+Pillow
 SQLAlchemy==2.0.43
-typing_extensions==4.15.0
+typing-extensions==4.15.0
 Werkzeug==3.1.3
